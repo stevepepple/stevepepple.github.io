@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+    <style>
+	
+	body {
+		font-family: "Helvetica Neue",HelveticaNeue,"Helvetica-Neue",Helvetica,"BBAlpha Sans",sans-serif;
+	}
+    circle {
+        stroke: #2D7260;
+        stroke-width:1px;
+        fill: #9DB9A7;
+        opacity:0.9;
+    }
+	
+	link, .link {
+        stroke: #0B2A42;
+        opacity:0.2;
+	}
+	
+	.tooltip {
+		background:#FFFFFF;
+		border: solid 1px #2D7260;
+	    opacity: 0.7;
+	    z-index: 100;
+		padding:10px;
+	    position: absolute;
+	}
+	
+    </style>
+</head>
+<body>
+    <script>
+        d3.json('data/stations_graph.json', function(json){
+            
+            var width = 1200,
+                height = 1000;
+            
+            var svg = d3.select('body')
+              .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+				
+			tip = d3.select("body").append("div")   
+			      .attr("class", "tooltip")               
+			      .style("opacity", 0);
+
+            // draw the graph nodes
+            var node = svg.selectAll("circle.node")
+              .data(json.nodes)
+              .enter()
+              .append("circle")
+                .attr("class", "node")
+				.attr("title", function(d) { return d.name; })
+                .attr("r", 6);
+				
+            // draw the graph edges
+            var link = svg.selectAll("line.link")
+              .data(json.links)
+              .enter().append("line")
+			  .attr("class", "link");
+            
+            // create the layout
+			
+            var force = d3.layout.force()
+                .charge(-100)
+                .linkDistance(50)
+				.friction(0.4)
+                .size([width, height])
+                .nodes(json.nodes)
+                .links(json.links)
+                .start();
+            
+            // define what to do one each tick of the animation
+			/*
+			force.start();
+			var n = node.length;
+			node.forEach(function(d, i) {
+				
+				force.tick()
+				
+				console.log(d)
+				d.x = d.y = width / n * i;
+				
+			});
+			force.start();
+			*/
+			
+            force.on("tick", function() {
+
+				/* Decrease the line opacity based upon weight */
+                link.attr("x1", function(d) { return d.source.x; })
+                    .attr("y1", function(d) { return d.source.y; })
+                    .attr("x2", function(d) { return d.target.x; })
+                    .attr("y2", function(d) { return d.target.y; })
+                    .style("opacity", function(d) { return (d.source.weight / 10); });
+                
+				/* Decreast the line opacity based upon weight */
+                node.attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; })
+	                .attr("r",  function(d) { return 2 * d.weight; })
+					.on("mouseover", function(d){
+						tip.style("opacity", .8)
+						.style("left", d.x + "px")
+						.style("top", d.y + "px")
+						.html(d.name + "<br/>" + d.weight + " MTA lines")
+					});
+
+             });
+            // bind the drag interaction to the nodes
+			/*
+            node.call(force.drag);
+			*/
+			
+        });
+    </script>
+</body>
+</html>
